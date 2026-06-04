@@ -1,4 +1,7 @@
 
+using BankApi.Data;
+using Microsoft.EntityFrameworkCore;
+
 namespace BankApi
 {
     public class Program
@@ -7,18 +10,25 @@ namespace BankApi
         {
             var builder = WebApplication.CreateBuilder(args);
 
+            var ConnectionString = builder.Configuration.GetConnectionString("DefaultConnection");
+
             // Add services to the container.
+            
+            builder.Services.AddEndpointsApiExplorer();
+            builder.Services.AddSwaggerGen();
 
             builder.Services.AddControllers();
-            // Learn more about configuring OpenAPI at https://aka.ms/aspnet/openapi
             builder.Services.AddOpenApi();
-
+            builder.Services.AddDbContext<AppDbContext>(options =>
+            options.UseSqlServer(ConnectionString));
+            
             var app = builder.Build();
 
             // Configure the HTTP request pipeline.
             if (app.Environment.IsDevelopment())
             {
-                app.MapOpenApi();
+                app.UseSwagger();
+                app.UseSwaggerUI(); 
             }
 
             app.UseHttpsRedirection();
