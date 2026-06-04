@@ -1,30 +1,27 @@
 ﻿using System.ComponentModel.DataAnnotations;
 
-namespace BankApi.Data.Models
+namespace BankApi.Data.Models.DTOs
 {
-    public class Customer
+    public class RegisterCustomerDto
     {
-        [Key]
-        public int Id { get; set; }
         [Required]
         [StringLength(50)]
         public string FirstName { get; set; } = string.Empty;
+
         [Required]
         [StringLength(50)]
         public string LastName { get; set; } = string.Empty;
-        [Required]
-        [StringLength(50)]
-        [Phone]
-        public string Phone { get; set; } = string.Empty;
-        [Required]
-        [StringLength(100)]
-        [EmailAddress]
-        public string Email { get; set; } = string.Empty;
-        [Required]
-        public byte[] PasswordHash { get; set; } = Array.Empty<byte>();
 
         [Required]
-        public byte[] PasswordSalt { get; set; } = Array.Empty<byte>();
-        public string FullName => $"{FirstName} {LastName}";
+        [Phone]
+        public string Phone { get; set; } = string.Empty;
+
+        [Required]
+        [EmailAddress]
+        public string Email { get; set; } = string.Empty;
+
+        [Required]
+        [StringLength(100, MinimumLength = 6, ErrorMessage = "Password must be at least 6 characters.")]
+        public string Password { get; set; } = string.Empty; 
     }
 }
