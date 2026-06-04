@@ -18,16 +18,23 @@ namespace BankApi.Controllers
         [HttpGet]
         public async Task<ActionResult<IEnumerable<AccountResponseDto>>> GetAll()
         {
-            var response = await _context.Accounts.Select(a => new AccountResponseDto
+            var accounts = await _context.Accounts.Include(a => a.Customer).ToListAsync();
+            var response = accounts.Select(a => new AccountResponseDto
             {
+
                 Id = a.Id,
                 AccountNumber = a.AccountNumber,
                 Balance = a.Balance,
                 CreatedAt = a.CreatedAt,
-                AccountType = a is SavingAccount ? "Saving Account" : "CurrentAccount",
+                AccountType = a switch
+                {
+                    SavingAccount => "Saving Account",
+                    CurrentAccount => "Current Account",
+                    _ => "BaseAccount"
+                },
                 CustomerId = a.CustomerId,
                 CustomerName = a.Customer != null ? $"{a.Customer.FirstName} {a.Customer.LastName}" : "Unknown"
-            }).ToListAsync();
+            }).ToList();
             
             return Ok(response);
         }
