@@ -1,5 +1,6 @@
 
 using BankApi.Data;
+using BankApi.Services;
 using Microsoft.EntityFrameworkCore;
 
 namespace BankApi
@@ -9,6 +10,8 @@ namespace BankApi
         public static void Main(string[] args)
         {
             var builder = WebApplication.CreateBuilder(args);
+
+            builder.Services.AddScoped<IAccountSevices, AccountService>();
 
             var ConnectionString = builder.Configuration.GetConnectionString("DefaultConnection");
 
