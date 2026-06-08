@@ -15,6 +15,6 @@ namespace BankApi.Data.Models.DTOs
         public int CustomerId { get; set; }
 
         [Required]
-        public decimal WithdrawLimit { get; set; }
+        public decimal WithdrawalLimit { get; set; }
     }
 }

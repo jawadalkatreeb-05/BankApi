@@ -13,6 +13,10 @@ namespace BankApi.Services
         Task<IEnumerable<TransactionResponseDto>> GetAccountHistoryAsync(int accountId);
         Task<bool> UpdateAccountAsync(int accountId, decimal newLimit);
 
+        // Creating Acccount
+        Task<AccountResponseDto> CreateSavingAccountAsync(SavingAccountDto dto);
+        Task<AccountResponseDto> CreateCurrentAccountAsync(CurrentAccountDto dto);
+
 
     }
 }

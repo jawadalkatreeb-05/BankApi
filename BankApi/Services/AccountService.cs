@@ -133,5 +133,61 @@ namespace BankApi.Services
             return true;
         }
 
+        public async Task<AccountResponseDto> CreateSavingAccountAsync(SavingAccountDto dto)
+        {
+            var customerExists = await _context.Customers.AsNoTracking().AnyAsync(c => c.Id == dto.CustomerId);
+            if (!customerExists) return null!;
+                
+            var savingAccount = new SavingAccount
+            {
+                AccountNumber = await GenerateUniqueAccountNumberAsync("SAV"),
+                Balance = dto.Balance,
+                CreatedAt = DateTime.UtcNow,
+                CustomerId = dto.CustomerId,
+                InterestRate = dto.InterestRate
+            };
+            await _context.Accounts.AddAsync(savingAccount);
+            await _context.SaveChangesAsync();
+
+            return await GetAccountByIdAsync(savingAccount.Id);
+        }
+
+        public async Task<AccountResponseDto> CreateCurrentAccountAsync(CurrentAccountDto dto)
+        {
+            var customerExists = await _context.Customers.AsNoTracking().AnyAsync(c => c.Id == dto.CustomerId);
+            if (!customerExists) return null!;
+
+            var currentAccount = new CurrentAccount
+            {
+                AccountNumber = await GenerateUniqueAccountNumberAsync("CUR"),
+                Balance = dto.Balance,
+                CreatedAt = DateTime.UtcNow,
+                CustomerId = dto.CustomerId,
+                WithdrawalLimit= dto.WithdrawalLimit
+            };
+
+            await _context.Accounts.AddAsync(currentAccount);
+            await _context.SaveChangesAsync();
+
+            return await GetAccountByIdAsync(currentAccount.Id);
+        }
+        private async Task<string> GenerateUniqueAccountNumberAsync(string prefix)
+        {
+            var random = new Random();
+            string accountNumber = string.Empty;
+            bool isUnique = false;
+            while (!isUnique)
+            {
+                int randomNumber = random.Next(10000000, 99999999);
+                accountNumber = $"{prefix}-{randomNumber})";
+
+                var exists = await _context.Accounts.AnyAsync(a => a.AccountNumber == accountNumber);
+                if (!exists)
+                {
+                    isUnique = true;
+                }   
+            }
+            return  accountNumber;
+        }
     }
 }

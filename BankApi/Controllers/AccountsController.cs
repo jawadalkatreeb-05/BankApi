@@ -72,56 +72,31 @@ namespace BankApi.Controllers
 
             return Ok("Account deleted successfully");
         }
+        [HttpPost("saving")]
+        public async Task<ActionResult<AccountResponseDto>> CreateSavingAccount([FromBody] SavingAccountDto dto)
+        {
+            var result = await _accountService.CreateSavingAccountAsync(dto);
+            if (result == null) return BadRequest("Failed to create saving account");
+
+            return CreatedAtAction(nameof(GetById), new { id = result.Id }, result);
+        }
+        [HttpPost("current")]
+        public async Task<ActionResult<AccountResponseDto>> CreateCurrentAccount([FromBody] CurrentAccountDto dto)
+        {
+            var result = await _accountService.CreateCurrentAccountAsync(dto);
+            if (result == null) return BadRequest("Failed to create current account");
+
+            return CreatedAtAction(nameof(GetById), new { id = result.Id }, result);
+        }
+
+
+
+
 
         // _____________________________________________________________________________________________________
-        //[HttpGet]
-        //public async Task<ActionResult<IEnumerable<AccountResponseDto>>> GetAll()
-        //{
-        //    var accounts = await _context.Accounts.Include(a => a.Customer).ToListAsync();
-        //    var response = accounts.Select(a => new AccountResponseDto
-        //    {
-
-        //        Id = a.Id,
-        //        AccountNumber = a.AccountNumber,
-        //        Balance = a.Balance,
-        //        CreatedAt = a.CreatedAt,
-        //        AccountType = a switch
-        //        {
-        //            SavingAccount => "Saving Account",
-        //            CurrentAccount => "Current Account",
-        //            _ => "BaseAccount"
-        //        },
-        //        CustomerId = a.CustomerId,
-        //        CustomerName = a.Customer != null ? $"{a.Customer.FirstName} {a.Customer.LastName}" : "Unknown"
-        //    }).ToList();
-
-        //    return Ok(response);
-        //}
-        //[HttpGet("{id}")]
-        //public async Task<ActionResult<AccountResponseDto>> GetById(int id)
-        //{
-        //    var account = await _context.Accounts
-        //        .Include(a => a.Customer)
-        //        .FirstOrDefaultAsync(a => a.Id == id);
-
-        //    if (account == null)
-        //    {
-        //        return NotFound(new { message = $"Account with ID {id} not found." });
-        //    }
-
-        //    var response = new AccountResponseDto
-        //    {
-        //        Id = account.Id,
-        //        AccountNumber = account.AccountNumber,
-        //        Balance = account.Balance,
-        //        CreatedAt = account.CreatedAt,
-        //        AccountType = account.GetType().Name, 
-        //        CustomerId = account.CustomerId,
-        //        CustomerName = account.Customer != null ? account.Customer.FullName : "Unknown"
-        //    };
-
-        //    return Ok(response);
-        //}
+        
+        
+     
         //[HttpPost("saving")]
         //public async Task<ActionResult<AccountResponseDto>> CreateSavingAccount(SavingAccountDto dto)
         //{
