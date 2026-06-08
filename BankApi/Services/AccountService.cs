@@ -7,7 +7,7 @@ using Microsoft.EntityFrameworkCore;
 
 namespace BankApi.Services
 {
-    public class AccountService : IAccountSevices
+    public class AccountService : IAccountServices
     {
         private readonly AppDbContext _context;
         public AccountService(AppDbContext context)
@@ -17,6 +17,7 @@ namespace BankApi.Services
         public async Task<IEnumerable<AccountResponseDto>> GetAllAccountsAsync()
         {
             var response = await _context.Accounts
+                .AsNoTracking()
                 .Select(a => new AccountResponseDto
                 {
                     Id = a.Id,
@@ -34,6 +35,7 @@ namespace BankApi.Services
         public async Task<AccountResponseDto> GetAccountByIdAsync(int id)
         {
             var account = await _context.Accounts
+                .AsNoTracking()
                 .Include(a => a.Customer)
                 .FirstOrDefaultAsync(a => a.Id == id);
             if (account == null) return null!;
@@ -66,7 +68,7 @@ namespace BankApi.Services
             var account = await _context.Accounts.FindAsync(accountId);
             if (account == null) return false;
 
-            account.Balance += amount; // about DTOs ??
+            account.Balance += amount; // about DTOs
 
             var transaction = new Transaction
             {
@@ -84,7 +86,52 @@ namespace BankApi.Services
 
         public async Task<bool> WithdrawAsync(int accountId, decimal amount)
         {
+            if (amount <= 0) return false;
+
+            var account = await _context.Accounts.FindAsync(accountId);
+            if (account == null) return false;
+
+            if (account.Balance < amount) return false;
+
+            account.Balance -= amount;
+
+            var transaction = new Transaction
+            {
+                Amount = amount,
+                TransactionDate = DateTime.UtcNow,
+                Type = TransactionType.Withdrawal,
+                AccountId = accountId
+            };
+
+            _context.Transactions.Add(transaction);
+            await _context.SaveChangesAsync();
+
             return true;
         }
+
+        public async Task<IEnumerable<TransactionResponseDto>> GetAccountHistoryAsync(int accountId)
+        {
+            var response = await _context.Transactions
+                .AsNoTracking()
+                .Where(r => r.AccountId == accountId)
+                .OrderByDescending(r => r.TransactionDate)
+                .Select(r => new TransactionResponseDto
+                {
+                    Id = r.Id,
+                    Amount = r.Amount,
+                    TransactionDate = r.TransactionDate,
+                    TransactionType = r.Type.ToString(),
+                    AccountId = r.AccountId,
+                    AccountNumber = r.Account != null ? r.Account.AccountNumber : "Unknown"
+                }).ToListAsync();
+                
+
+            return response;
+        }
+        public async Task<bool> UpdateAccountAsync(int accountId, decimal newLimit)
+        {
+            return true;
+        }
+
     }
 }
