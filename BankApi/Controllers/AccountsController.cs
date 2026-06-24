@@ -1,6 +1,7 @@
 ﻿using BankApi.Data;
 using BankApi.Data.Models;
-using BankApi.Data.Models.DTOs;
+using BankApi.Data.Models.DTOs.RequestDTOs;
+using BankApi.Data.Models.DTOs.ResponseDTOs;
 using BankApi.Services;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -11,23 +12,23 @@ namespace BankApi.Controllers
     [Route("api/[controller]")]
     public class AccountsController : ControllerBase
     {
-        private readonly IAccountServices _accountService;
+        private readonly IAccountServices _accountServices;
 
         public AccountsController(IAccountServices accountService)
         {
-            _accountService = accountService;
+            _accountServices = accountService;
         }
         [HttpGet]
         public async Task<ActionResult<IEnumerable<AccountResponseDto>>> GetAll()
         {
-            var result = await _accountService.GetAllAccountsAsync();
+            var result = await _accountServices.GetAllAccountsAsync();
 
             return Ok(result);
         }
         [HttpGet("{id}")]
         public async Task<ActionResult<AccountResponseDto>> GetById(int id)
         {
-            var result = await _accountService.GetAccountByIdAsync(id);
+            var result = await _accountServices.GetAccountByIdAsync(id);
 
             if (result == null) return NotFound("Account not found");
 
@@ -36,11 +37,11 @@ namespace BankApi.Controllers
         [HttpGet("{id}/history")]
         public async Task<ActionResult<IEnumerable<TransactionResponseDto>>> GetAccountHistory(int id)
         {
-            var accountExists = await _accountService.GetAccountByIdAsync(id);
+            var accountExists = await _accountServices.GetAccountByIdAsync(id);
 
             if (accountExists == null) return NotFound("Account not found");
 
-            var result = await _accountService.GetAccountHistoryAsync(id);
+            var result = await _accountServices.GetAccountHistoryAsync(id);
 
             return Ok(result);
         }
@@ -48,34 +49,34 @@ namespace BankApi.Controllers
         [HttpPost("{id}/deposit")]
         public async Task<IActionResult> Deposit(int id, [FromBody] decimal amount)
         {
-            var result = await _accountService.DepositAsync(id, amount);
+            var result = await _accountServices.DepositAsync(id, amount);
 
             if (!result) return BadRequest("Deposit failed");
 
-            return Ok("Deposit successful");
+            return Ok(new { message = "Deposit successful" });
         }
         [HttpPost("{id}/withdraw")]
         public async Task<IActionResult> Withdraw(int id, [FromBody] decimal amount)
         {
-            var result = await _accountService.WithdrawAsync(id, amount);
+            var result = await _accountServices.WithdrawAsync(id, amount);
 
             if (!result) return BadRequest("Withdrawal failed");
             
-            return Ok("Withdrawal successful");
+            return Ok(new { message = "Withdrawal successful" });
         }
         [HttpDelete("{id}/delete")]
         public async Task<IActionResult> Delete(int id)
         {
-            var result = await _accountService.DeleteAccountAsync(id);
+            var result = await _accountServices.DeleteAccountAsync(id);
 
             if (!result) return BadRequest("Account deletion failed");
 
-            return Ok("Account deleted successfully");
+            return Ok(new { message = "Account deleted successfully" });
         }
         [HttpPost("saving")]
         public async Task<ActionResult<AccountResponseDto>> CreateSavingAccount([FromBody] SavingAccountDto dto)
         {
-            var result = await _accountService.CreateSavingAccountAsync(dto);
+            var result = await _accountServices.CreateSavingAccountAsync(dto);
             if (result == null) return BadRequest("Failed to create saving account");
 
             return CreatedAtAction(nameof(GetById), new { id = result.Id }, result);
@@ -83,12 +84,20 @@ namespace BankApi.Controllers
         [HttpPost("current")]
         public async Task<ActionResult<AccountResponseDto>> CreateCurrentAccount([FromBody] CurrentAccountDto dto)
         {
-            var result = await _accountService.CreateCurrentAccountAsync(dto);
+            var result = await _accountServices.CreateCurrentAccountAsync(dto);
             if (result == null) return BadRequest("Failed to create current account");
 
             return CreatedAtAction(nameof(GetById), new { id = result.Id }, result);
         }
 
+        [HttpPost("{id}/update-limit")]
+        public async Task<IActionResult> UpdateWithdrawalLimit(int id, [FromBody] UpdateWithdrawalLimitDto dto)
+        {
+            var result = await _accountServices.UpdateAccountAsync(id, dto.NewWithdrawalLimit);
+            if (!result) return BadRequest("Failed to update limit. Account might not exist or it is a Saving Account.");
+            
+            return Ok(new { message = "Withdrawal limit updated successfully." });
+        }
 
 
 

@@ -1,6 +1,6 @@
 ﻿using BankApi.Data.Enums;
 
-namespace BankApi.Data.Models.DTOs
+namespace BankApi.Data.Models.DTOs.ResponseDTOs
 {
     public class TransactionResponseDto
     {

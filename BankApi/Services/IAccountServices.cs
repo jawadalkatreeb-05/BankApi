@@ -1,5 +1,6 @@
 ﻿using BankApi.Data;
-using BankApi.Data.Models.DTOs;
+using BankApi.Data.Models.DTOs.RequestDTOs;
+using BankApi.Data.Models.DTOs.ResponseDTOs;
 
 namespace BankApi.Services
 {

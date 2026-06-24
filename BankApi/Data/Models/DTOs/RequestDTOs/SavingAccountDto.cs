@@ -1,6 +1,6 @@
 ﻿using System.ComponentModel.DataAnnotations;
 
-namespace BankApi.Data.Models.DTOs
+namespace BankApi.Data.Models.DTOs.RequestDTOs
 {
     public class SavingAccountDto
     {

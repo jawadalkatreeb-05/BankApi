@@ -1,4 +1,4 @@
-﻿namespace BankApi.Data.Models.DTOs
+﻿namespace BankApi.Data.Models.DTOs.ResponseDTOs
 {
     public class AccountResponseDto
     {

@@ -25,6 +25,9 @@ namespace BankApi.Data.Models
 
         [Required]
         public byte[] PasswordSalt { get; set; } = Array.Empty<byte>();
+        public bool IsActive { get; set; } = true;
         public string FullName => $"{FirstName} {LastName}";
     }
+
+    
 }

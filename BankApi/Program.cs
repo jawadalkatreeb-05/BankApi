@@ -11,7 +11,7 @@ namespace BankApi
         {
             var builder = WebApplication.CreateBuilder(args);
 
-            builder.Services.AddScoped<IAccountServices, AccountService>();
+            builder.Services.AddScoped<IAccountServices, AccountServices>();
             builder.Services.AddScoped<ICustomerServices, CustomerServices>();
 
             var ConnectionString = builder.Configuration.GetConnectionString("DefaultConnection");

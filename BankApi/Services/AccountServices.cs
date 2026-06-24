@@ -1,16 +1,17 @@
 ﻿using BankApi.Data;
 using BankApi.Data.Enums;
 using BankApi.Data.Models;
-using BankApi.Data.Models.DTOs;
+using BankApi.Data.Models.DTOs.RequestDTOs;
+using BankApi.Data.Models.DTOs.ResponseDTOs;
 using Microsoft.AspNetCore.Http.HttpResults;
 using Microsoft.EntityFrameworkCore;
 
 namespace BankApi.Services
 {
-    public class AccountService : IAccountServices
+    public class AccountServices : IAccountServices
     {
         private readonly AppDbContext _context;
-        public AccountService(AppDbContext context)
+        public AccountServices(AppDbContext context)
         {
             _context = context;
         }
@@ -34,20 +35,20 @@ namespace BankApi.Services
 
         public async Task<AccountResponseDto> GetAccountByIdAsync(int id)
         {
-            var account = await _context.Accounts
+            var response = await _context.Accounts
                 .AsNoTracking()
                 .Include(a => a.Customer)
                 .FirstOrDefaultAsync(a => a.Id == id);
-            if (account == null) return null!;
+            if (response == null) return null!;
             return new AccountResponseDto  // Review 
             {
-                Id = account.Id,
-                AccountNumber = account.AccountNumber,
-                Balance = account.Balance,
-                CreatedAt = account.CreatedAt,
-                AccountType = account is SavingAccount ? "SavingAccount" : "CurrentAccount",
-                CustomerId = account.CustomerId,
-                CustomerName = account.Customer != null ? account.Customer.FirstName + " " + account.Customer.LastName : "Unknown"
+                Id = response.Id,
+                AccountNumber = response.AccountNumber,
+                Balance = response.Balance,
+                CreatedAt = response.CreatedAt,
+                AccountType = response is SavingAccount ? "SavingAccount" : "CurrentAccount",
+                CustomerId = response.CustomerId,
+                CustomerName = response.Customer != null ? response.Customer.FirstName + " " + response.Customer.LastName : "Unknown"
             };
         }
         public async Task<bool> DeleteAccountAsync(int id)
@@ -130,6 +131,17 @@ namespace BankApi.Services
         }
         public async Task<bool> UpdateAccountAsync(int accountId, decimal newLimit)
         {
+            var account = await _context.Accounts.FindAsync(accountId);
+            if (account == null) return false;
+
+            if (account is not CurrentAccount currentAccount)
+            {
+                return false;
+            }
+
+            currentAccount.WithdrawalLimit = newLimit;
+
+            await _context.SaveChangesAsync();
             return true;
         }
 
@@ -137,7 +149,7 @@ namespace BankApi.Services
         {
             var customerExists = await _context.Customers.AsNoTracking().AnyAsync(c => c.Id == dto.CustomerId);
             if (!customerExists) return null!;
-                
+
             var savingAccount = new SavingAccount
             {
                 AccountNumber = await GenerateUniqueAccountNumberAsync("SAV"),

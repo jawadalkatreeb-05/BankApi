@@ -1,8 +1,8 @@
 ﻿using System.ComponentModel.DataAnnotations;
 
-namespace BankApi.Data.Models.DTOs
+namespace BankApi.Data.Models.DTOs.RequestDTOs
 {
-    public class RegisterCustomerDto
+    public class UpdateCustomerDto
     {
         [Required]
         [StringLength(50)]
@@ -15,13 +15,5 @@ namespace BankApi.Data.Models.DTOs
         [Required]
         [Phone]
         public string Phone { get; set; } = string.Empty;
-
-        [Required]
-        [EmailAddress]
-        public string Email { get; set; } = string.Empty;
-
-        [Required]
-        [StringLength(100, MinimumLength = 6, ErrorMessage = "Password must be at least 6 characters.")]
-        public string Password { get; set; } = string.Empty; 
     }
 }
