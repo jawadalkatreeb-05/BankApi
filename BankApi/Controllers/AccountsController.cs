@@ -1,10 +1,14 @@
 ﻿using BankApi.Data;
+using BankApi.Data.Enums;
 using BankApi.Data.Models;
 using BankApi.Data.Models.DTOs.RequestDTOs;
 using BankApi.Data.Models.DTOs.ResponseDTOs;
 using BankApi.Services;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Identity.Client;
+using System.Security.Claims;
 
 namespace BankApi.Controllers
 {
@@ -18,6 +22,7 @@ namespace BankApi.Controllers
         {
             _accountServices = accountService;
         }
+
         [HttpGet]
         public async Task<ActionResult<IEnumerable<AccountResponseDto>>> GetAll()
         {
@@ -25,6 +30,7 @@ namespace BankApi.Controllers
 
             return Ok(result);
         }
+
         [HttpGet("{id}")]
         public async Task<ActionResult<AccountResponseDto>> GetById(int id)
         {
@@ -34,6 +40,7 @@ namespace BankApi.Controllers
 
             return Ok(result);
         }
+
         [HttpGet("{id}/history")]
         public async Task<ActionResult<IEnumerable<TransactionResponseDto>>> GetAccountHistory(int id)
         {
@@ -46,24 +53,68 @@ namespace BankApi.Controllers
             return Ok(result);
         }
 
-        [HttpPost("{id}/deposit")]
-        public async Task<IActionResult> Deposit(int id, [FromBody] decimal amount)
+        [Authorize]
+        [HttpPost("{accountId}/deposit")]
+        public async Task<IActionResult> Deposit(int accountId, [FromBody] decimal amount)
         {
-            var result = await _accountServices.DepositAsync(id, amount);
+            var userIdString = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            if (userIdString == null)
+            {
+                return Unauthorized("Sorry, you must login first.");
+            }
 
-            if (!result) return BadRequest("Deposit failed");
+            int currentCustomerId = int.Parse(userIdString);
+
+            var account = await _accountServices.GetAccountByIdAsync(accountId);
+
+            if (account == null)
+            {
+                return NotFound("Account is not exist.");
+            }
+            
+            if (account.CustomerId != currentCustomerId)
+            {
+                return StatusCode(403, "You're not authorized to use this account");
+            }
+
+            var result = await _accountServices.DepositAsync(accountId, amount);
+
+            if (!result) return BadRequest("Deposit failed.");
 
             return Ok(new { message = "Deposit successful" });
         }
-        [HttpPost("{id}/withdraw")]
-        public async Task<IActionResult> Withdraw(int id, [FromBody] decimal amount)
-        {
-            var result = await _accountServices.WithdrawAsync(id, amount);
 
-            if (!result) return BadRequest("Withdrawal failed");
+        [Authorize]
+        [HttpPost("{accountId}/withdraw")]
+        public async Task<IActionResult> Withdraw(int accountId, [FromBody] decimal amount)
+        {
+            var userIdString = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            if (userIdString == null)
+            {
+                return Unauthorized("Sorry, you must login first.");
+            }
+
+            int currentCustomerId = int.Parse(userIdString);
+
+            var account = await _accountServices.GetAccountByIdAsync(accountId);
+
+            if (account == null)
+            {
+                return NotFound("Account is not exist.");
+            }
+
+            if (account.CustomerId != currentCustomerId)
+            {
+                return StatusCode(403, "You're not authorized to use this account");
+            }
+
+            var result = await _accountServices.WithdrawAsync(accountId, amount);
+
+            if (!result) return BadRequest("Withdrawal failed, please check your account balance or withdrawal limit");
             
             return Ok(new { message = "Withdrawal successful" });
         }
+
         [HttpDelete("{id}/delete")]
         public async Task<IActionResult> Delete(int id)
         {
@@ -73,6 +124,7 @@ namespace BankApi.Controllers
 
             return Ok(new { message = "Account deleted successfully" });
         }
+
         [HttpPost("saving")]
         public async Task<ActionResult<AccountResponseDto>> CreateSavingAccount([FromBody] SavingAccountDto dto)
         {
@@ -81,6 +133,7 @@ namespace BankApi.Controllers
 
             return CreatedAtAction(nameof(GetById), new { id = result.Id }, result);
         }
+
         [HttpPost("current")]
         public async Task<ActionResult<AccountResponseDto>> CreateCurrentAccount([FromBody] CurrentAccountDto dto)
         {

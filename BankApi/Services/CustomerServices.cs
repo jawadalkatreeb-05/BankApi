@@ -3,6 +3,9 @@ using BankApi.Data.Models;
 using BankApi.Data.Models.DTOs.RequestDTOs;
 using BankApi.Data.Models.DTOs.ResponseDTOs;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.IdentityModel.Tokens;
+using System.IdentityModel.Tokens.Jwt;
+using System.Security.Claims;
 using System.Security.Cryptography;
 using System.Text;
 
@@ -11,10 +14,11 @@ namespace BankApi.Services
     public class CustomerServices : ICustomerServices
     {
         private readonly AppDbContext _context;
-
-        public CustomerServices(AppDbContext context)
+        private readonly IConfiguration _configuration;
+        public CustomerServices(AppDbContext context, IConfiguration configuration)
         {
             _context = context;
+            _configuration = configuration;
         }
 
         public async Task<IEnumerable<CustomerResponseDto>> GetAllCustomersAsync(string? searchTerm)  // -------------- Done
@@ -101,7 +105,7 @@ namespace BankApi.Services
                 FullName = $"{dto.FirstName} {dto.LastName}"
             }; 
         }
-        public async Task<CustomerResponseDto> LoginAsync(LoginDto dto) // --------------- Done
+        public async Task<LoginResponseDto> LoginAsync(LoginDto dto) // --------------- Done
         {
             var customer = await _context.Customers.FirstOrDefaultAsync(c => c.Email.ToLower() == dto.Email.ToLower());
             if(customer == null) return null!;
@@ -109,8 +113,8 @@ namespace BankApi.Services
             if (!customer.IsActive) return null!;
 
             if (!VerifyPasswordHash(dto.Password, customer.PasswordHash, customer.PasswordSalt)) return null!;
-
-            return new CustomerResponseDto
+                
+            var customerDto = new CustomerResponseDto
             {
                 Id = customer.Id,
                 FirstName = customer.FirstName,
@@ -120,6 +124,15 @@ namespace BankApi.Services
                 IsActive = customer.IsActive,
                 FullName = customer.FullName
             };
+            var generatedToken = CreateJwtToken(customer);
+
+            return new LoginResponseDto
+            {
+               Token = generatedToken,
+               Expiration = DateTime.UtcNow.AddMinutes(double.Parse(_configuration["Jwt:ExpireMinutes"]!)),
+               Customer = customerDto
+            };
+
         }
 
         public async Task<bool> UpdateCustomerAsync(int id, UpdateCustomerDto dto) // --------------- Done
@@ -168,6 +181,33 @@ namespace BankApi.Services
         }
 // _____________________________________________________________________________________________________________________ //
 
+        private string CreateJwtToken(Customer customer)
+        {
+            var claims = new List<Claim>
+            {
+                new Claim(ClaimTypes.NameIdentifier, customer.Id.ToString()),
+                new Claim(ClaimTypes.Email, customer.Email),
+                new Claim(ClaimTypes.Name, customer.FullName)
+            };
+
+            var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_configuration["Jwt:Key"]!));
+
+            var creds = new SigningCredentials(key, SecurityAlgorithms.HmacSha256Signature);
+
+            var tokenDescriptor = new SecurityTokenDescriptor
+            {
+                Subject = new ClaimsIdentity(claims),
+                Expires = DateTime.UtcNow.AddMinutes(double.Parse(_configuration["Jwt:ExpireMinutes"]!)),
+                Issuer = _configuration["Jwt:Issure"],
+                Audience = _configuration["Jwt:Audience"],
+                SigningCredentials = creds
+            };
+
+            var tokenHandler = new JwtSecurityTokenHandler();
+            var token = tokenHandler.CreateToken(tokenDescriptor);
+               
+            return tokenHandler.WriteToken(token);
+        }
         private bool VerifyPasswordHash(string password, byte[] storedHash, byte[] storedSalt)
         {
             using (var hmac = new HMACSHA512(storedSalt))
